@@ -19,7 +19,6 @@ from dataclasses import dataclass, field
 import requests
 import streamlit as st
 from bs4 import BeautifulSoup
-import pdfplumber
 from pypdf import PdfReader
 
 # --------------------------------------------------------------------------
@@ -98,21 +97,14 @@ class PillarResult:
 # PILLAR 1 — PDF TEXT EXTRACTION + RECEIPT NUMBER ISOLATION
 # --------------------------------------------------------------------------
 def extract_pdf_text(file_bytes: bytes) -> str:
-    """Extracts all text from the uploaded PDF using pdfplumber."""
+    """Extracts all text from the uploaded PDF using pypdf."""
     text_chunks = []
     try:
-        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
-            for page in pdf.pages:
-                page_text = page.extract_text() or ""
-                text_chunks.append(page_text)
+        reader = PdfReader(io.BytesIO(file_bytes))
+        for page in reader.pages:
+            text_chunks.append(page.extract_text() or "")
     except Exception as e:
-        st.warning(f"pdfplumber text extraction failed ({e}); attempting pypdf fallback.")
-        try:
-            reader = PdfReader(io.BytesIO(file_bytes))
-            for page in reader.pages:
-                text_chunks.append(page.extract_text() or "")
-        except Exception as e2:
-            st.error(f"Both PDF text extraction engines failed: {e2}")
+        st.error(f"PDF text extraction failed: {e}")
     return "\n".join(text_chunks)
 
 
